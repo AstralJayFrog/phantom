@@ -53,11 +53,24 @@ end subroutine set_defaults_viscosity
 !  for irealvisc = 1 \nu is specified directly in the input file
 !+
 !----------------------------------------------------------------
-real function shearfunc(xi,yi,zi,spsoundi)
+real function shearfunc(xi,yi,zi,spsoundi, ignore_sandcastle, pmassi, strain)
  use part,   only:xyzmh_ptmass
  use eos,    only:polyk,qfacdisc
  real, intent(in) :: xi,yi,zi,spsoundi
+ integer, intent(in) :: ignore_sandcastle
+ real, intent(in) :: pmassi, strain(6)
  real :: rsph2,omega1,H,r1,r2
+ 
+
+ real :: ds,mus,mu2,I0,rhos
+ real :: I, muI, epsilondotcolon
+
+ ! All these units are in SI
+ ds = 0.53 * 0.001 
+ mus = 0.38
+ mu2 = 0.64
+ I0 = 0.279
+ rhos = 2.5 * 0.001 * 1000000
 
  select case(irealvisc)
  case(2)
@@ -83,7 +96,21 @@ real function shearfunc(xi,yi,zi,spsoundi)
 !
 !--default is zero
 !
-    shearfunc = 0.
+   if(ignore_sandcastle == 1) then
+      shearfunc = 0
+   endif
+   if(ignore_sandcastle == 0) then
+
+      ! Go through how shear viscosity should be calculated in the mu I model
+
+     epsilondotcolon = 2 * strain(1) + 4 * strain(2) + 4 * strain(3) + 2*strain(4) + 4*strain(5) + 2*strain(6)
+
+     I = ds * (2 * epsilondotcolon) ** (0.5) / (pmassi/rhos)**(0.5)
+
+     muI = mus + (mu2 - mus) / ((I0/I) + 1)
+
+     shearfunc = muI * pmassi / (2 * epsilondotcolon) ** (0.5)
+   endif
 
  case(3)
 !
@@ -119,7 +146,7 @@ real function dt_viscosity(xi,yi,zi,hi,spsoundi)
  real, intent(in) :: xi,yi,zi,hi,spsoundi
  real             :: viscnu
 
- viscnu = shearfunc(xi,yi,zi,spsoundi)
+ viscnu = shearfunc(xi,yi,zi,spsoundi, 1, 1.1, [1.1,1.1,1.1,1.1,1.1,1.1])
 
  if (viscnu > tiny(viscnu)) then
     dt_viscosity = 0.4*C_force*hi*hi/viscnu

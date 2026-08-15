@@ -2100,16 +2100,19 @@ subroutine get_stress(pri,spsoundi,rhoi,rho1i,xi,yi,zi, &
  visctermaniso = 0.
  stressiso     = 0.
 
+ ! Should be fine to call strain beforehand, it just MIGHT need the condition that maxdvdx==maxp
+ strain = strain_from_dvdx(dvdx)
+
  if (realviscosity) then
     !--get shear viscosity coefficient from function
-    shearvisc = shearfunc(xi,yi,zi,spsoundi)
+    shearvisc = shearfunc(xi,yi,zi,spsoundi, 0, pmassi, strain)
     etavisc   = rhoi*shearvisc
 !
 !--add physical viscosity terms to stress tensor
 !  (construct S^ij/ rho^2 for use in the force equation)
 !
     if (maxdvdx==maxp) then
-       strain = strain_from_dvdx(dvdx)
+       
        !--get stress (multiply by coefficient for use in second derivative)
        term = -shearvisc*pmassi*rho1i  ! shearvisc = eta/rho, so this is eta/rho**2
        sxxi = term*strain(1)
@@ -3000,7 +3003,7 @@ subroutine finish_cell_and_store_results(icall,cell,fxyzu,xyzh,vxyzu,poten,dt,dv
 
        if (.not.isothermal .or. track_lum) then
           if (maxdvdx == maxp .and. realviscosity) then
-             shearvisc = shearfunc(xi,yi,zi,spsoundi)
+             shearvisc = shearfunc(xi,yi,zi,spsoundi, 1, 1.1, [1.1,1.1,1.1,1.1,1.1,1.1])
              straini   = strain_from_dvdx(dvdxi(:))
              fsum(idudtdissi) = fsum(idudtdissi) + (bulkvisc - 2./3.*shearvisc)*divvi**2 &
                            + 0.5*shearvisc*(straini(1)**2 + 2.*(straini(2)**2 + straini(3)**2 + straini(5)**2) &
