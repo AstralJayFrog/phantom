@@ -3003,8 +3003,9 @@ subroutine finish_cell_and_store_results(icall,cell,fxyzu,xyzh,vxyzu,poten,dt,dv
 
        if (.not.isothermal .or. track_lum) then
           if (maxdvdx == maxp .and. realviscosity) then
-             shearvisc = shearfunc(xi,yi,zi,spsoundi, 1, 1.1, [1.1,1.1,1.1,1.1,1.1,1.1])
              straini   = strain_from_dvdx(dvdxi(:))
+             shearvisc = shearfunc(xi,yi,zi,spsoundi, 0, pmassi, straini)
+             
              fsum(idudtdissi) = fsum(idudtdissi) + (bulkvisc - 2./3.*shearvisc)*divvi**2 &
                            + 0.5*shearvisc*(straini(1)**2 + 2.*(straini(2)**2 + straini(3)**2 + straini(5)**2) &
                            + straini(4)**2 + straini(6)**2)
