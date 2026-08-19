@@ -56,6 +56,7 @@ end subroutine set_defaults_viscosity
 real function shearfunc(xi,yi,zi,spsoundi, ignore_sandcastle, pmassi, strain)
  use part,   only:xyzmh_ptmass
  use eos,    only:polyk,qfacdisc
+ use units,  only::in_code_units
  real, intent(in) :: xi,yi,zi,spsoundi
  integer, intent(in) :: ignore_sandcastle
  real, intent(in) :: pmassi, strain(6)
@@ -64,13 +65,14 @@ real function shearfunc(xi,yi,zi,spsoundi, ignore_sandcastle, pmassi, strain)
 
  real :: ds,mus,mu2,I0,rhos
  real :: I, muI, epsilondotcolon
+ integer :: ierr
 
- ! All these units are in SI
- ds = 0.53 * 0.001 
+ ! All units that don't call 'in_code_units' are unitless.
+ ds = in_code_units('0.53.*mm', ierr, 'length')
  mus = 0.38
- mu2 = 0.64
+ mu2 = 0.64 
  I0 = 0.279
- rhos = 2.5 * 0.001 * 1000000
+ rhos = in_code_units('2.5.*g/cm^3', ierr, 'density')
 
  select case(irealvisc)
  case(2)
