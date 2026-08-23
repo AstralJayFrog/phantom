@@ -14,7 +14,7 @@ module viscosity
 !
 ! :Runtime parameters:
 !   - bulkvisc   : *magnitude of bulk viscosity*
-!   - irealvisc  : *physical viscosity type (0=none,1=const,2=Shakura/Sunyaev)*
+!   - irealvisc  : *physical viscosity type (0=none,1=const,2=Shakura/Sunyaev, 4=mu I model)*
 !   - shearparam : *magnitude of shear viscosity (irealvisc=1) or alpha_SS (irealvisc=2)*
 !
 ! :Dependencies: dim, eos, infile_utils, io, part, timestep
@@ -53,26 +53,16 @@ end subroutine set_defaults_viscosity
 !  for irealvisc = 1 \nu is specified directly in the input file
 !+
 !----------------------------------------------------------------
-real function shearfunc(xi,yi,zi,spsoundi, ignore_sandcastle, pmassi, strain)
+real function shearfunc(xi,yi,zi,spsoundi, ignore_sandcastle, pri, strain)
  use part,   only:xyzmh_ptmass
  use eos,    only:polyk,qfacdisc
- use units,  only::in_code_units
+ use units,  only:in_code_units
+ use granular, only:granularshearfunc
  real, intent(in) :: xi,yi,zi,spsoundi
  integer, intent(in) :: ignore_sandcastle
- real, intent(in) :: pmassi, strain(6)
+ real, intent(in) :: pri, strain(6)
  real :: rsph2,omega1,H,r1,r2
- 
-
- real :: ds,mus,mu2,I0,rhos
- real :: I, muI, epsilondotcolon
  integer :: ierr
-
- ! All units that don't call 'in_code_units' are unitless.
- ds = in_code_units('0.53.*mm', ierr, 'length')
- mus = 0.38
- mu2 = 0.64 
- I0 = 0.279
- rhos = in_code_units('2.5.*g/cm^3', ierr, 'density')
 
  select case(irealvisc)
  case(2)
@@ -98,21 +88,7 @@ real function shearfunc(xi,yi,zi,spsoundi, ignore_sandcastle, pmassi, strain)
 !
 !--default is zero
 !
-   if(ignore_sandcastle == 1) then
-      shearfunc = 0
-   endif
-   if(ignore_sandcastle == 0) then
-
-      ! Go through how shear viscosity should be calculated in the mu I model
-
-     epsilondotcolon = 2 * strain(1) + 4 * strain(2) + 4 * strain(3) + 2*strain(4) + 4*strain(5) + 2*strain(6)
-
-     I = ds * (2 * epsilondotcolon) ** (0.5) / (pmassi/rhos)**(0.5)
-
-     muI = mus + (mu2 - mus) / ((I0/I) + 1)
-
-     shearfunc = muI * pmassi / (2 * epsilondotcolon) ** (0.5)
-   endif
+   shearfunc = 0
 
  case(3)
 !
@@ -129,6 +105,17 @@ real function shearfunc(xi,yi,zi,spsoundi, ignore_sandcastle, pmassi, strain)
     endif
 
     shearfunc=shearparam*spsoundi*H
+ case(4)
+!
+! -- mu I model
+! Go through how shear viscosity should be calculated in the mu I model
+   if(ignore_sandcastle == 0) then
+    shearfunc = granularshearfunc(strain, pri)
+    !shearfunc = 0
+   else
+    shearfunc = 0
+   endif
+
 
  case default
 
@@ -168,6 +155,8 @@ subroutine viscinfo(ivisc,iprint)
  integer, intent(in) :: ivisc,iprint
 
  select case(ivisc)
+ case(4)
+   write(iprint,"(a,es10.3)") ' μ(I) model = ',shearparam
  case(3)
     write(iprint,"(a,es10.3)") ' Shakura-Sunyaev viscosity for binary systems, alpha_SS = ',shearparam
  case(2)
