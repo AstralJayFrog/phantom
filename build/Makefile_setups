@@ -84,6 +84,13 @@ ifeq ($(SETUP), wddisc)
     DUST=yes
 endif
 
+ifeq ($(SETUP), sandcastle)
+#   Sand on barrier
+    ISOTHERMAL=yes
+    SETUPFILE=setup_sandcastle.f90
+    KNOWN_SETUP=yes
+endif
+
 ifeq ($(SETUP), asteroidwind)
 #   asteroid emitting a wind (Trevascus et al. 2021)
     SETUPFILE=setup_asteroidwind.f90

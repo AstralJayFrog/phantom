@@ -88,6 +88,10 @@ module physcon
  real(kind=8), parameter :: nm = 1.d-7                          !Nanometre                 cm
  real(kind=8), parameter :: angstrom = 1.d-8                    !Angstrom                  cm
 !
+!--Density scale
+!
+ real(kind=8), parameter :: g_per_cc = gram/cm**3
+!
 !--Time scale
 !
  real(kind=8), parameter :: seconds = 1.d0

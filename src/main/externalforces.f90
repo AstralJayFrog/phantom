@@ -41,6 +41,7 @@ module externalforces
  real, public :: eps_soft = 0.d0
  real, private :: eps2_soft = 0.d0
  real, public :: Rdisc = 5.
+ real, public :: grav_accel = 9.81
 
  real, public :: accradius1_hard = 0.
  logical, public :: extract_iextern_from_hdr = .false.
@@ -68,12 +69,13 @@ module externalforces
    iext_gwinspiral    = 14, &
    iext_discgravity   = 15, &
    iext_corot_binary  = 16, &
-   iext_geopot        = 17
+   iext_geopot        = 17, &
+   iext_gravity       = 18
 
  !
  ! Human-readable labels for these
  !
- integer, parameter, public  :: iexternalforce_max = 17
+ integer, parameter, public  :: iexternalforce_max = 18
  character(len=*), parameter, public :: externalforcetype(iexternalforce_max) = (/ &
     'star                 ', &
     'corotate             ', &
@@ -91,7 +93,8 @@ module externalforces
     'grav. wave inspiral  ', &
     'disc gravity         ', &
     'corotating binary    ', &
-    'geopotential model   '/)
+    'geopotential model   ', &
+    'gravity              '/)
 
 contains
 !-----------------------------------------------------------------------
@@ -390,7 +393,12 @@ subroutine externalforce(iexternalforce,xi,yi,zi,hi,ti,fextxi,fextyi,fextzi,phi,
     !
     pos = (/xi,yi,zi/)
     call get_centrifugal_force(pos,fextxi,fextyi,fextzi,phi)
-
+ case(iext_gravity)
+    !
+    !--vertical gravity
+    !
+    phi = -grav_accel*zi
+    fextzi = -grav_accel
  case default
 !
 !--external forces should not be called if iexternalforce = 0
@@ -658,6 +666,8 @@ subroutine write_options_externalforces(iunit,iexternalforce)
     call write_options_gwinspiral(iunit)
  case(iext_geopot)
     call write_options_geopot(iunit)
+ case(iext_gravity)
+   call write_inopt(grav_accel,'grav_accel','gravitational acceleration (-z) in code units (e.g. 9.81)',iunit)
  end select
 
 end subroutine write_options_externalforces
@@ -772,6 +782,8 @@ subroutine read_options_externalforces(db,nerr,iexternalforce)
     call read_options_gwinspiral(db,nerr)
  case(iext_geopot)
     call read_options_geopot(db,nerr)
+ case(iext_gravity)
+   call read_inopt(grav_accel,'grav_accel',db,ierr,errcount=nerr,min=0.,default=grav_accel)
  end select
 
 end subroutine read_options_externalforces
