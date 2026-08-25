@@ -467,7 +467,7 @@ subroutine compute_energies(t)
              ! physical viscosity
              if (irealvisc /= 0) then
                 shearparam_art  = 0.1*alphai*hi*vsigi
-                shearparam_phys = shearfunc(xi,yi,zi,spsoundi, 1, 1.1, [1.1, 1.1, 1.1, 1.1, 1.1, 1.1])
+                shearparam_phys = shearfunc(xi,yi,zi,spsoundi, 1, 1.1, [1.1, 1.1, 1.1, 1.1, 1.1, 1.1], 1.1)
                 if (shearparam_art > 0.) then
                    ratio_phys_to_av = shearparam_phys/shearparam_art
                 else
