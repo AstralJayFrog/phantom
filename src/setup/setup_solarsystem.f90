@@ -50,8 +50,9 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  use setsolarsystem,only:set_minor_planets,add_sun_and_planets,add_body
  use kernel,        only:hfact_default
  use eos_tillotson, only:rho_0,A
+ use eos,           only:ieos
  use spherical,     only:set_sphere
- use options,       only:ieos
+ !use options,       only:ieos
  use setup_params,  only:npart_total
  use infile_utils,  only:get_options
  use viscosity,     only:irealvisc
@@ -76,6 +77,7 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  asteroids = .true.
  np_apophis = 0
  irealvisc = 4
+
  !call date_and_time(values=values)
  !year = values(1); month = values(2); day = values(3)
  !write(epoch,"(i4.4,'-',i2.2,'-',i2.2)") year,month,day
