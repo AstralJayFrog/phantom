@@ -50,6 +50,8 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  use part,         only:igas,periodic,set_particle_type,iboundary
  use mpiutils,     only:reduceall_mpi
  use mpidomain,    only:i_belong
+ use viscosity,    only:irealvisc
+ use eos,          only:ieos
  use infile_utils, only:get_options,infile_exists
  use units,        only:set_units,udist,unit_density,utime
  use externalforces,only:iext_gravity,grav_accel
@@ -77,6 +79,8 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  polyk       = 0.
  iexternalforce = iext_gravity
  grav_accel  = 9.81*metre/udist/(seconds/utime)
+ irealvisc = 4
+ ieos = 26
  !
  ! Default setup parameters
  !
