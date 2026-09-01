@@ -50,10 +50,10 @@ end subroutine init_eos_incomp
 !   - u_cv (complete vaporisation) is called u_s' in Benz et al. 1986
 !+
 !-----------------------------------------------------------------------
-subroutine equationofstate_incomp(rho,u,pressure,spsound,gamma)
+subroutine equationofstate_incomp(rho,pressure,spsound,gamma)
  use granular_variables,    only: rhos,K
  use units,    only:in_code_units
- real, intent(inout) :: rho,u
+ real, intent(inout) :: rho
  real, intent(out)   :: pressure, spsound, gamma
 
  real :: cgsrhosi

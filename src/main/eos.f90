@@ -545,8 +545,8 @@ subroutine equationofstate(eos_type,ponrhoi,spsoundi,rhoi,xi,yi,zi,tempi,eni,gam
  case (26)
     !Give the function everything in cgs to ensure the values work correctly
     cgsrhoi = rhoi * unit_density
-    cgseni  = eni * unit_ergg
-    call equationofstate_incomp(cgsrhoi,cgseni,cgspresi,cgsspsoundi,gammai)
+    !cgseni  = eni * unit_ergg
+    call equationofstate_incomp(cgsrhoi,cgspresi,cgsspsoundi,gammai)
     ponrhoi  = real(cgspresi / (unit_pressure * rhoi))
     spsoundi = real(cgsspsoundi / unit_velocity)
 
