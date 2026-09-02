@@ -6,19 +6,14 @@
 !--------------------------------------------------------------------------!
 module setup
 !
-! Setup for the SR blast wave problem
+! Setup for a collapsing sandcastle
 !
 ! :References: None
 !
-! :Owner: David Liptai
+! :Owner: Jamie Lawson
 !
 ! :Runtime parameters:
-!   - boxsize   : *size of the box*
-!   - npartx    : *number of particles in x-direction*
-!   - pblast    : *pressure in blast*
-!   - pmed      : *pressure in medium*
-!   - rblast    : *radius of blast*
-!   - smoothfac : *IC smoothing factor (in terms of particle spacing)*
+!   -
 !
 ! :Dependencies: boundary, dim, infile_utils, io, io_control, kernel,
 !   mpidomain, mpiutils, part, physcon, setup_params, timestep, unifdis,
@@ -30,7 +25,7 @@ module setup
  private
  !--private module variables
  integer :: npartx, nlayers
- real    :: boxsize, height, width
+ real    :: boxsize, height, radius, rhozero
 
 contains
 
@@ -83,7 +78,7 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  boxsize     = 10.*metre/udist
  npartx      = 40
  height      = 5.0*metre/udist
- width       = 1.0*metre/udist
+ radius       = 1.0*metre/udist
  nlayers       = 3
  !
  ! Infile
@@ -124,15 +119,15 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  !
  ! making sandcastle
  !
- call set_unifdis('cubic',id,master,-0.1*boxsize,0.1*boxsize,&
-                  -0.5*width,0.5*width,0.0,height,&
+ call set_unifdis('closepacked',id,master,-radius,radius,&
+                  -radius,radius,0.0,height,&
                   deltax,hfact,npart,xyzh,periodic,mask=i_belong)
 
  !
  ! Finalise particle properties
  !
  npartoftype(igas) = npart-npartoftype(iboundary)
- totmass           = rhozero*(width**2*height)
+ totmass           = rhozero*(3.14159*radius**2*height)
  massoftype(igas)      = totmass/reduceall_mpi('+',npartoftype(igas))
  if (id==master) print*,' gas particle mass = ',massoftype(igas)
 
@@ -159,8 +154,9 @@ subroutine write_setupfile(filename)
  call write_inopt(npartx, 'npartx' ,'number of particles in x-direction',iunit)
  call write_inopt(boxsize,'boxsize','size of the box'   ,iunit)
  call write_inopt(height,'height','height of sandcastle',iunit)
- call write_inopt(width,'width','width of sandcastle',iunit)
+ call write_inopt(radius,'radius','radius of sandcastle',iunit)
  call write_inopt(nlayers,'nlayers','number of particle layers in boundary',iunit)
+ call write_inopt(rhozero,'rho0','density of sandcastle particles',iunit)
  close(iunit)
 
 end subroutine write_setupfile
@@ -182,9 +178,10 @@ subroutine read_setupfile(filename,ierr)
  call open_db_from_file(db,filename,iunit,ierr)
  call read_inopt(npartx ,'npartx' ,db,min=8,errcount=nerr)
  call read_inopt(boxsize,'boxsize',db,min=0.,errcount=nerr)
- call read_inopt(width,'width',db,min=0.,max=boxsize,errcount=nerr)
+ call read_inopt(radius,'radius',db,min=0.,max=boxsize,errcount=nerr)
  call read_inopt(height,'height',db,min=0.,max=boxsize,errcount=nerr)
  call read_inopt(nlayers,'nlayers',db,min=1,max=100,errcount=nerr)
+ call read_inopt(rhozero,'rho0',db,min=0.,errcount=nerr)
  call close_db(db)
 
  if (nerr > 0) then
