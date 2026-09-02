@@ -298,6 +298,9 @@ subroutine select_unit(string,unit,ierr,unit_type)
  case('kg/m^3','kg/m3','kg_per_m3','kg m^-3')
     unit = kg/metre**3
     utype = 'density'
+ case('KPa', 'kPa', 'kilopascals', 'kpa')
+    unit = 1000*kg/metre/(seconds**2)
+    utype = 'pressure'
  case default
     if (len_trim(unitstr) > 0) ierr = 1
     unit = 1.d0
@@ -424,6 +427,8 @@ real function in_code_units(string,ierr,unit_type) result(rval)
        rval = real(val/unit_velocity)
     case('density')
        rval = real(val/unit_density)
+    case('pressure')
+       rval = real(val/(umass/(udist*utime**2)))
     case default
        rval = real(val)  ! no unit conversion
     end select

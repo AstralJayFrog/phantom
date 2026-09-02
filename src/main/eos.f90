@@ -29,6 +29,7 @@ module eos
 !    23 = Hypervelocity Impact of solids-fluids from Tillotson EOS (Tillotson 1962 - implemented by Brundage A. 2013
 !    24 = read tabulated eos (for use with icooling == 9)
 !    25 = zero temperature eos (simplified eos for white dwarfs, Helmholtz is the better choice)
+!    26 = incompressible eos (equation 59 from Bui 2021)
 !
 ! :References:
 !    Lodato & Pringle (2007)
@@ -50,7 +51,7 @@ module eos
 !
 ! :Dependencies: dim, dump_utils, eos_HIIR, eos_barotropic, eos_gasradrec,
 !   eos_helmholtz, eos_idealplusrad, eos_mesa, eos_piecewise, eos_shen,
-!   eos_stamatellos, eos_stratified, eos_tillotson, eos_zerotemp,
+!   eos_stamatellos, eos_stratified, eos_tillotson, eos_incomp, eos_zerotemp,
 !   infile_utils, io, ionization_mod, mesa_microphysics, part, physcon,
 !   units
 !
@@ -58,7 +59,7 @@ module eos
  use dim,           only:gr,do_radiation
  use eos_gasradrec, only:irecomb
  implicit none
- integer, parameter, public :: maxeos = 25
+ integer, parameter, public :: maxeos = 26
  real,               public :: polyk, polyk2, gamma
  real,               public :: qfacdisc = 0.75, qfacdisc2 = 0.75
  real,               public :: cs_min = 0.0
@@ -145,6 +146,7 @@ subroutine equationofstate(eos_type,ponrhoi,spsoundi,rhoi,xi,yi,zi,tempi,eni,gam
  use eos_barotropic,   only:get_eos_barotropic
  use eos_piecewise,    only:get_eos_piecewise
  use eos_tillotson,    only:equationofstate_tillotson
+ use eos_incomp,       only:equationofstate_incomp
  use eos_stamatellos
  use eos_HIIR,         only:get_eos_HIIR_iso,get_eos_HIIR_adiab
  use eos_zerotemp,     only:get_zerotemp_pressure,get_zerotemp_spsoundi
@@ -540,6 +542,14 @@ subroutine equationofstate(eos_type,ponrhoi,spsoundi,rhoi,xi,yi,zi,tempi,eni,gam
     ponrhoi = presi/rhoi
     spsoundi = cgsspsoundi / unit_velocity
     tempi = 0.
+ case (26)
+    !Give the function everything in cgs to ensure the values work correctly
+    cgsrhoi = rhoi * unit_density
+    !cgseni  = eni * unit_ergg
+    call equationofstate_incomp(cgsrhoi,cgspresi,cgsspsoundi,gammai)
+    ponrhoi  = real(cgspresi / (unit_pressure * rhoi))
+    spsoundi = real(cgsspsoundi / unit_velocity)
+
  case default
     spsoundi = 0. ! avoids compiler warnings
     ponrhoi  = 0.
@@ -568,6 +578,7 @@ subroutine init_eos(eos_type,ierr)
  use eos_HIIR,       only:init_eos_HIIR
  use dim,            only:maxvxyzu,do_radiation
  use eos_tillotson,  only:init_eos_tillotson
+ use eos_incomp,     only:init_eos_incomp
  use eos_zerotemp,   only:eos_zerotemp_init
  integer, intent(in)  :: eos_type
  integer, intent(out) :: ierr
@@ -653,6 +664,8 @@ subroutine init_eos(eos_type,ierr)
     ! zero temperature
     !
     call eos_zerotemp_init(ierr)
+ case(26)
+    call init_eos_incomp(ierr)
 
  end select
  done_init_eos = .true.
@@ -1621,6 +1634,7 @@ subroutine eosinfo(eos_type,iprint)
  use eos_gasradrec,  only:eos_info_gasradrec
  use eos_stamatellos,only:eos_file
  use eos_tillotson,  only:eos_info_tillotson
+ use eos_incomp,     only:eos_info_incomp
  use eos_zerotemp,   only:eos_zerotemp_eosinfo
  integer, intent(in) :: eos_type,iprint
 
@@ -1676,6 +1690,8 @@ subroutine eosinfo(eos_type,iprint)
     write(iprint,"(/,a,a)") 'Using tabulated Eos from file:', eos_file, 'and calculated gamma.'
  case(25)
     call eos_zerotemp_eosinfo(iprint)
+ case(26)
+    call eos_info_incomp(iprint)
 
  end select
  write(iprint,*)
@@ -1787,6 +1803,7 @@ subroutine write_options_eos(iunit)
  use eos_piecewise,  only:write_options_eos_piecewise
  use eos_gasradrec,  only:write_options_eos_gasradrec
  use eos_tillotson,  only:write_options_eos_tillotson
+ use eos_incomp,     only:write_options_eos_incomp
  use eos_zerotemp,   only:write_options_eos_zerotemp
  integer, intent(in) :: iunit
 
@@ -1817,6 +1834,8 @@ subroutine write_options_eos(iunit)
     call write_options_eos_tillotson(iunit)
  case(25)
     call write_options_eos_zerotemp(iunit)
+ case(26)
+    call write_options_eos_incomp(iunit)
  end select
 
  if (.not.isothermal .and. eos_allows_shock_and_work(ieos)) then
@@ -1845,6 +1864,7 @@ subroutine read_options_eos(db,nerr)
  use eos_gasradrec,  only:read_options_eos_gasradrec
  use eos_helmholtz,  only:read_options_eos_helmholtz
  use eos_tillotson,  only:read_options_eos_tillotson
+ use eos_incomp,     only:read_options_eos_incomp
  use eos_zerotemp,   only:read_options_eos_zerotemp
  type(inopts), intent(inout) :: db(:)
  integer,      intent(inout) :: nerr
@@ -1877,6 +1897,7 @@ subroutine read_options_eos(db,nerr)
  if (ieos==20) call read_options_eos_gasradrec(db,nerr)
  if (ieos==23) call read_options_eos_tillotson(db,nerr)
  if (ieos==25) call read_options_eos_zerotemp(db,nerr)
+ if (ieos==26) call read_options_eos_incomp(db, nerr)
 
 end subroutine read_options_eos
 

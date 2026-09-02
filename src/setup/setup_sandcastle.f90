@@ -25,7 +25,7 @@ module setup
  private
  !--private module variables
  integer :: npartx, nlayers
- real    :: boxsize, height, radius, rhozero
+ real    :: boxsize, height, radius
 
 contains
 
@@ -45,6 +45,8 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  use part,         only:igas,periodic,set_particle_type,iboundary
  use mpiutils,     only:reduceall_mpi
  use mpidomain,    only:i_belong
+ use viscosity,    only:irealvisc
+ use eos,          only:ieos
  use infile_utils, only:get_options,infile_exists
  use units,        only:set_units,udist,unit_density,utime
  use externalforces,only:iext_gravity,grav_accel
@@ -72,6 +74,8 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  polyk       = 0.
  iexternalforce = iext_gravity
  grav_accel  = 9.81*metre/udist/(seconds/utime)
+ irealvisc = 4
+ ieos = 26
  !
  ! Default setup parameters
  !
@@ -156,7 +160,6 @@ subroutine write_setupfile(filename)
  call write_inopt(height,'height','height of sandcastle',iunit)
  call write_inopt(radius,'radius','radius of sandcastle',iunit)
  call write_inopt(nlayers,'nlayers','number of particle layers in boundary',iunit)
- call write_inopt(rhozero,'rho0','density of sandcastle particles',iunit)
  close(iunit)
 
 end subroutine write_setupfile
@@ -181,7 +184,6 @@ subroutine read_setupfile(filename,ierr)
  call read_inopt(radius,'radius',db,min=0.,max=boxsize,errcount=nerr)
  call read_inopt(height,'height',db,min=0.,max=boxsize,errcount=nerr)
  call read_inopt(nlayers,'nlayers',db,min=1,max=100,errcount=nerr)
- call read_inopt(rhozero,'rho0',db,min=0.,errcount=nerr)
  call close_db(db)
 
  if (nerr > 0) then
