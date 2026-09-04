@@ -51,6 +51,7 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  use units,        only:set_units,udist,unit_density,utime
  use externalforces,only:iext_gravity,grav_accel
  use options,      only:iexternalforce
+ use granular_variables,     only:rhos
  integer,           intent(in)    :: id
  integer,           intent(out)   :: npart
  integer,           intent(out)   :: npartoftype(:)
@@ -69,7 +70,7 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  !
  time        = 0.
  hfact       = hfact_default
- rhozero     = 3.5*g_per_cc/unit_density
+ rhozero     = 2.5*g_per_cc/unit_density
  gamma       = 1
  polyk       = 0.
  iexternalforce = iext_gravity
@@ -125,7 +126,7 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
  !
  call set_unifdis('closepacked',id,master,-radius,radius,&
                   -radius,radius,0.0,height,&
-                  deltax,hfact,npart,xyzh,periodic,mask=i_belong)
+                  deltax,hfact,npart,xyzh,periodic,mask=i_belong, rcylmin=0.0, rcylmax=radius)
 
  !
  ! Finalise particle properties
@@ -139,6 +140,8 @@ subroutine setpart(id,npart,npartoftype,xyzh,massoftype,vxyzu,polyk,gamma,hfact,
    vxyzu(:,i) = 0.
    call set_particle_type(i,igas)
 enddo
+
+ rhos = rhozero
 
 end subroutine setpart
 
